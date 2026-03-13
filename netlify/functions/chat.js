@@ -78,7 +78,7 @@ Usuário: ${message}`
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${session.geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${session.geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
