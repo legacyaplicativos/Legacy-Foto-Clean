@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoClean — Seu Google Photos sem bagunça</title>
+  <meta name="description" content="Limpe seu Google Photos com IA. Detecta prints, duplicatas, fotos borradas e lixo." />
+
+  <!-- ════════════════════════════════════
+       CONFIGURAÇÃO — edite aqui
+       ════════════════════════════════════ -->
+  <script>
+    window.PHOTOCLEAN_CONFIG = {
+      // Cole aqui seu Google OAuth Client ID
+      // Obtenha em: https://console.cloud.google.com/apis/credentials
+      GOOGLE_CLIENT_ID: "SEU_CLIENT_ID_AQUI.apps.googleusercontent.com"
+    }
+  </script>
+  <!-- ════════════════════════════════════ -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0a0a0f;
+      --bg1:      #12121a;
+      --bg2:      #1a1a26;
+      --border:   #22223a;
+      --border2:  #2e2e50;
+      --amber:    #fbbf24;
+      --amber2:   #f59e0b;
+      --coral:    #fb7185;
+      --mint:     #34d399;
+      --text:     #ffffff;
+      --text2:    rgba(255,255,255,0.55);
+      --text3:    rgba(255,255,255,0.3);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(251,191,36,0.07) 0%, transparent 60%);
+    }
+    #app { min-height: 100vh; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg1); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── Buttons ── */
+    .btn { display:inline-flex; align-items:center; gap:8px; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; border-radius:12px; }
+    .btn:active { transform:scale(.97); }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .btn-primary { background:var(--amber); color:#0a0a0f; font-weight:700; padding:12px 24px; font-size:15px; box-shadow:0 8px 24px rgba(251,191,36,.22); }
+    .btn-primary:hover:not(:disabled) { background:var(--amber2); }
+    .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text2); padding:8px 16px; font-size:13px; border-radius:10px; }
+    .btn-ghost:hover:not(:disabled) { border-color:rgba(251,191,36,.45); color:var(--text); }
+    .btn-danger { background:#f43f5e; color:#fff; padding:8px 16px; font-size:13px; }
+    .btn-danger:hover:not(:disabled) { background:#fb7185; }
+    .btn-sm { padding:7px 14px; font-size:12px; border-radius:9px; gap:6px; }
+
+    /* ── Cards / inputs ── */
+    .card { background:var(--bg1); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .input { width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px 14px; font-family:'JetBrains Mono',monospace; font-size:13px; outline:none; transition:border-color .2s; }
+    .input::placeholder { color:var(--text3); }
+    .input:focus { border-color:rgba(251,191,36,.55); box-shadow:0 0 0 3px rgba(251,191,36,.08); }
+
+    /* ── Badges ── */
+    .badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:99px; font-size:10px; font-weight:500; }
+    .badge-red    { background:rgba(244,63,94,.14);  color:#fb7185; border:1px solid rgba(244,63,94,.2);  }
+    .badge-yellow { background:rgba(245,158,11,.14); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
+    .badge-green  { background:rgba(16,185,129,.14); color:#34d399; border:1px solid rgba(16,185,129,.2); }
+    .badge-gray   { background:rgba(255,255,255,.07); color:var(--text3); border:1px solid var(--border); }
+
+    /* ── Animations ── */
+    @keyframes spin  { to { transform:rotate(360deg); } }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .spin    { animation:spin 1s linear infinite; }
+    .float   { animation:float 5s ease-in-out infinite; }
+    .pulse   { animation:pulse 3s ease-in-out infinite; }
+    .fade-up { animation:fadeUp .5s ease-out forwards; }
+
+    .shimmer-text {
+      background:linear-gradient(90deg,#fbbf24,#f59e0b,#fde68a,#f59e0b,#fbbf24);
+      background-size:200% auto;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; animation:shimmer 3s linear infinite;
+    }
+    .progress-bar {
+      background:linear-gradient(90deg,rgba(251,191,36,.3),rgba(251,191,36,.9),#fde68a,rgba(251,191,36,.3));
+      background-size:200% 100%; animation:shimmer 1.5s linear infinite;
+    }
+
+    /* ── Photo grid ── */
+    .photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:10px; }
+    @media(min-width:640px)  { .photo-grid { grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px; } }
+    @media(min-width:1024px) { .photo-grid { grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); } }
+
+    .photo-card { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; cursor:pointer; transition:transform .18s,box-shadow .18s; background:var(--bg2); }
+    .photo-card:hover { transform:scale(1.025); }
+    .photo-card.selected { box-shadow:0 0 0 2.5px var(--amber), 0 0 0 5px rgba(251,191,36,.15); transform:scale(.975); }
+    .photo-card img { width:100%; height:100%; object-fit:cover; display:block; transition:opacity .3s; }
+    .photo-card .overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(10,10,15,.88) 0%,transparent 55%); opacity:0; transition:opacity .2s; }
+    .photo-card:hover .overlay { opacity:1; }
+    .photo-card .tags { position:absolute; bottom:6px; left:6px; right:6px; display:flex; flex-wrap:wrap; gap:3px; }
+    .photo-card .check { position:absolute; top:7px; right:7px; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .photo-card .check.unchecked { background:rgba(10,10,15,.6); border:1.5px solid rgba(255,255,255,.3); opacity:0; }
+    .photo-card:hover .check.unchecked, .photo-card.selected .check.unchecked { opacity:1; }
+    .photo-card .check.checked { background:var(--amber); border:none; opacity:1; }
+
+    /* ── Header ── */
+    .header { position:sticky; top:0; z-index:50; background:rgba(10,10,15,.88); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .logo { display:flex; align-items:center; gap:8px; }
+    .logo-icon { width:30px; height:30px; border-radius:8px; background:var(--amber); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .logo-text { font-family:'Syne',sans-serif; font-weight:700; font-size:17px; letter-spacing:-.02em; }
+
+    /* ── Filter pills ── */
+    .filter-bar { display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .filter-bar::-webkit-scrollbar { display:none; }
+    .pill { padding:5px 12px; border-radius:99px; font-size:12px; font-weight:500; white-space:nowrap; cursor:pointer; border:1px solid var(--border); background:var(--bg2); color:var(--text2); transition:all .18s; }
+    .pill:hover { color:var(--text); border-color:rgba(251,191,36,.4); }
+    .pill.active { background:var(--amber); color:#0a0a0f; border-color:var(--amber); font-weight:700; }
+
+    /* ── Alert boxes ── */
+    .alert { padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:flex-start; gap:8px; }
+    .alert-warn  { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.2); color:rgba(251,191,36,.85); }
+    .alert-error { background:rgba(244,63,94,.1); border:1px solid rgba(244,63,94,.2); color:#fb7185; }
+    .alert-ok    { background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.2); color:#34d399; }
+
+    /* ── Chat ── */
+    .chat-messages { flex:1; overflow-y:auto; padding:16px 0; display:flex; flex-direction:column; gap:12px; }
+    .chat-bubble { max-width:82%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.55; }
+    .chat-bubble.bot  { background:var(--bg2); border:1px solid var(--border); align-self:flex-start; }
+    .chat-bubble.user { background:var(--amber); color:#0a0a0f; font-weight:500; align-self:flex-end; }
+
+    /* ── Misc ── */
+    .divider { height:1px; background:var(--border); margin:4px 0; }
+    .section { max-width:1200px; margin:0 auto; padding:0 16px; }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; color:var(--text3); text-align:center; gap:10px; }
+    .quota-bar { background:rgba(251,191,36,.06); border-bottom:1px solid rgba(251,191,36,.12); padding:6px 16px; text-align:center; font-size:11px; color:rgba(251,191,36,.65); }
+
+    @media(max-width:480px) {
+      .btn-primary { font-size:14px; padding:12px 20px; }
+      h1 { font-size:clamp(1.8rem,8vw,3rem) !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">Carregando...</div>
+
+<!-- React + Babel via CDN — sem build necessário -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ════════════════════════════════════
+// Constants & helpers
+// ════════════════════════════════════
+const CLIENT_ID = window.PHOTOCLEAN_CONFIG?.GOOGLE_CLIENT_ID || ''
+const SCOPES = [
+  'https://www.googleapis.com/auth/photoslibrary.readonly',
+  'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email',
+].join(' ')
+
+const STORAGE_KEY = 'photoclean_v2'
+function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') } catch { return null } }
+function saveState(data) { try { if (data === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch {} }
+
+const FILTER_OPTS = [
+  { key:'all',        label:'Todas',       emoji:'📷' },
+  { key:'ruim',       label:'Ruins',       emoji:'🗑️' },
+  { key:'borrada',    label:'Borradas',    emoji:'💨' },
+  { key:'escura',     label:'Escuras',     emoji:'🌑' },
+  { key:'screenshot', label:'Screenshots', emoji:'📸' },
+  { key:'duplicata',  label:'Duplicatas',  emoji:'🔁' },
+  { key:'meme',       label:'Memes',       emoji:'😂' },
+  { key:'documento',  label:'Docs',        emoji:'📄' },
+  { key:'util',       label:'Úteis ⭐',    emoji:'✨' },
+]
+
+const TAG_MAP = {
+  borrada:    { label:'Borrada',    cls:'badge-red'    },
+  escura:     { label:'Escura',     cls:'badge-red'    },
+  screenshot: { label:'Screenshot', cls:'badge-yellow' },
+  duplicata:  { label:'Duplicata',  cls:'badge-yellow' },
+  meme:       { label:'Meme',       cls:'badge-yellow' },
+  documento:  { label:'Doc',        cls:'badge-yellow' },
+  util:       { label:'Útil ⭐',    cls:'badge-green'  },
+}
+
+// ════════════════════════════════════
+// Spinner
+// ════════════════════════════════════
+function Spinner({ size = 16, color = 'currentColor' }) {
+  return (
+    <span style={{
+      display: 'inline-block', width: size, height: size, flexShrink: 0,
+      border: `2px solid rgba(255,255,255,.15)`,
+      borderTopColor: color, borderRadius: '50%',
+    }} className="spin" />
+  )
+}
+
+// ════════════════════════════════════
+// Landing Page
+// ════════════════════════════════════
+function LandingPage({ onSuccess }) {
+  const clientRef = useRef(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [gsiReady, setGsiReady] = useState(false)
+
+  useEffect(() => {
+    const tryInit = () => {
+      if (!window.google?.accounts?.oauth2) return false
+      if (!CLIENT_ID || CLIENT_ID.includes('SEU_CLIENT_ID')) return false
+      clientRef.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID, scope: SCOPES,
+        callback: async (resp) => {
+          if (resp.error) { setError('Autorização negada. Tente novamente.'); setLoading(false); return }
+          try {
+            const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${resp.access_token}` } })
+            onSuccess(resp.access_token, await r.json())
+          } catch { setError('Erro ao buscar perfil do Google.'); setLoading(false) }
+        }
+      })
+      setGsiReady(true)
+      return true
+    }
+    if (!tryInit()) {
+      const t = setInterval(() => { if (tryInit()) clearInterval(t) }, 300)
+      return () => clearInterval(t)
+    }
+  }, [onSuccess])
+
+  const connect = () => {
+    if (!CLIENT_ID || CLIENT_ID.includes('SEU_CLIENT_ID')) {
+      setError('Configure seu GOOGLE_CLIENT_ID no topo do arquivo index.html antes de continuar.')
+      return
+    }
+    if (!clientRef.current) { setError('Google não carregou ainda. Aguarde e tente novamente.'); return }
+    setError(''); setLoading(true)
+    clientRef.current.requestAccessToken()
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
+        <div className="logo">
+          <div className="logo-icon">📸</div>
+          <span className="logo-text">PhotoClean</span>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center' }}>
+        {/* Animated orb */}
+        <div style={{ position: 'relative', width: 160, height: 160, marginBottom: 40 }}>
+          <div className="pulse" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(251,191,36,.08)' }} />
+          <div style={{ position: 'absolute', inset: 14, borderRadius: '50%', border: '1px solid rgba(251,191,36,.14)' }} />
+          <div className="float" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 70, height: 70, borderRadius: 16, background: 'var(--bg2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, boxShadow: '0 16px 40px rgba(0,0,0,.55)' }}>📷</div>
+          </div>
+          {[['💨',315],['🌑',45],['📸',135],['🔁',225]].map(([e,a]) => {
+            const r = (a-90)*Math.PI/180, R=74
+            return <div key={a} style={{ position:'absolute', width:32, height:32, borderRadius:9, background:'var(--bg1)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, left:`calc(50% + ${R*Math.cos(r)}px - 16px)`, top:`calc(50% + ${R*Math.sin(r)}px - 16px)` }}>{e}</div>
+          })}
+        </div>
+
+        <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(2rem,5vw,3.25rem)', lineHeight: 1.15, letterSpacing: '-.03em', maxWidth: 660, marginBottom: 16 }}>
+          Seu Google Photos,{' '}
+          <span className="shimmer-text">sem a bagunça</span>
+        </h1>
+
+        <p style={{ color: 'var(--text2)', fontSize: '1.05rem', fontWeight: 300, maxWidth: 460, marginBottom: 10, lineHeight: 1.65 }}>
+          IA analisa cada foto e identifica lixo — prints, duplicatas, fotos borradas, memes e muito mais.
+        </p>
+        <p style={{ color: 'var(--text3)', fontSize: '0.8rem', marginBottom: 36 }}>
+          Grátis · No browser · Suas fotos ficam na sua conta
+        </p>
+
+        <button className="btn btn-primary" onClick={connect} disabled={loading} style={{ fontSize: 16, padding: '14px 28px', borderRadius: 14, gap: 10 }}>
+          {loading ? <><Spinner size={18} color="#0a0a0f" /> Conectando...</> : <><GoogleSvg /> Conectar com Google Photos</>}
+        </button>
+
+        {error && <div className="alert alert-error" style={{ marginTop: 14, maxWidth: 440, textAlign: 'left' }}>⚠️ {error}</div>}
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginTop: 36, justifyContent: 'center', color: 'var(--text3)', fontSize: 12 }}>
+          {['🔒 OAuth 2.0','⚡ Gemini 1.5 Flash','📦 Batches de 50 fotos'].map(t => <span key={t}>{t}</span>)}
+        </div>
+      </main>
+
+      {/* Features */}
+      <section style={{ borderTop: '1px solid var(--border)', padding: '32px 20px' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
+          {[['💨','Borradas','Fotos fora de foco'],['🌑','Escuras','Imagens subexpostas'],['📸','Screenshots','Prints de apps/WhatsApp'],['🔁','Duplicatas','Fotos repetidas']].map(([e,t,d]) => (
+            <div key={t} style={{ background: 'rgba(18,18,26,.5)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>{e}</div>
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{t}</div>
+              <div style={{ color: 'var(--text3)', fontSize: 12, lineHeight: 1.5 }}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// ════════════════════════════════════
+// Gemini Setup
+// ════════════════════════════════════
+function GeminiSetup({ userInfo, googleToken, onReady, onLogout }) {
+  const [key, setKey] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState(false)
+
+  const submit = async () => {
+    const k = key.trim()
+    if (!k.startsWith('AIza')) { setError('A chave deve começar com "AIza…"'); return }
+    setError(''); setLoading(true)
+    try {
+      const r = await fetch('/api/session', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ geminiKey: k, googleToken }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Chave inválida')
+      setOk(true)
+      setTimeout(onReady, 700)
+    } catch(e) { setError(e.message); setLoading(false) }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <header style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="logo"><div className="logo-icon">📸</div><span className="logo-text">PhotoClean</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {userInfo?.picture && <img src={userInfo.picture} alt="" style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(52,211,153,.4)' }} />}
+          <button className="btn btn-ghost btn-sm" onClick={onLogout}>Sair</button>
+        </div>
+      </header>
+
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <div style={{ width: '100%', maxWidth: 860 }}>
+          {/* Progress indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 36, fontSize: 13 }}>
+            <span style={{ color: 'var(--mint)', display: 'flex', alignItems: 'center', gap: 5 }}>✅ Google conectado</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 5 }}>🔑 Chave Gemini</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border2)' }} />
+            <span style={{ color: 'var(--text3)' }}>Dashboard</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
+            {/* Tutorial */}
+            <div>
+              <h2 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: '1.6rem', marginBottom: 8 }}>Configure o Gemini</h2>
+              <p style={{ color: 'var(--text2)', fontSize: 14, lineHeight: 1.65, marginBottom: 20 }}>
+                O PhotoClean usa o <strong style={{ color: 'var(--amber)' }}>Gemini 1.5 Flash</strong> — gratuito, até 1.500 requests/dia.
+                Você precisa de uma chave pessoal.
+              </p>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', marginBottom: 24 }}>
+                🔑 Gerar minha chave Gemini
+              </a>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[['01','Acesse aistudio.google.com/app/apikey'],['02','Clique em "Create API Key"'],['03','Selecione um projeto Google Cloud'],['04','Copie a chave (começa com AIzaSy…)'],['05','Cole no campo ao lado e clique Continuar']].map(([n,t]) => (
+                  <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13 }}>
+                    <span style={{ fontFamily: 'JetBrains Mono,monospace', color: 'rgba(251,191,36,.55)', fontSize: 11, marginTop: 1, flexShrink: 0 }}>{n}</span>
+                    <span style={{ color: 'var(--text2)' }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Input */}
+            <div className="card" style={{ padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <span style={{ fontSize: 20 }}>🔑</span>
+                <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: '1.05rem' }}>Cole sua chave aqui</span>
+              </div>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text3)', marginBottom: 6 }}>Chave da API Gemini</label>
+              <input type="password" className="input" value={key} onChange={e=>{setKey(e.target.value);setError('')}}
+                onKeyDown={e=>e.key==='Enter'&&submit()} placeholder="AIzaSyD3f8G..." style={{ marginBottom: 4 }} />
+              <p style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 20 }}>Protegida como ●●●● por segurança</p>
+
+              {error && <div className="alert alert-error" style={{ marginBottom: 14 }}>⚠️ {error}</div>}
+
+              {ok ? (
+                <div className="alert alert-ok">✅ Chave validada! Entrando no dashboard...</div>
+              ) : (
+                <button className="btn btn-primary" onClick={submit} disabled={loading||!key.trim()} style={{ width: '100%', justifyContent: 'center', padding: '13px' }}>
+                  {loading ? <><Spinner size={16} color="#0a0a0f" /> Validando...</> : 'Continuar →'}
+                </button>
+              )}
+
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {[['Quota gratuita','~1.500 req/dia'],['Modelo','gemini-1.5-flash'],['Custo','gratuito']].map(([k,v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text3)' }}>{k}</span>
+                    <span style={{ color: 'var(--amber)' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ════════════════════════════════════
+// Photo Card
+// ════════════════════════════════════
+function PhotoCard({ photo, analysis, selected, onToggle }) {
+  const [loaded, setLoaded] = useState(false)
+  const thumb = photo.baseUrl ? `${photo.baseUrl}=w300-h300-c` : null
+  const tags = analysis ? Object.entries(TAG_MAP).filter(([k])=>analysis[k]===true) : []
+
+  return (
+    <div className={`photo-card${selected?' selected':''}`} onClick={onToggle}>
+      {thumb ? (
+        <>
+          {!loaded && <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text3)', fontSize:24 }}>⏳</div>}
+          <img src={thumb} alt="" onLoad={()=>setLoaded(true)} style={{ opacity: loaded?1:0 }} loading="lazy" />
+        </>
+      ) : (
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>📷</div>
+      )}
+      <div className="overlay" />
+      <div className="check unchecked" style={{ opacity: selected?1:undefined }}>
+        {selected && <span style={{ fontSize:12, color:'#0a0a0f', fontWeight:700 }}>✓</span>}
+      </div>
+      <div className="check checked" style={{ display: selected?'flex':'none' }}>
+        <span style={{ fontSize:12, color:'#0a0a0f', fontWeight:700 }}>✓</span>
+      </div>
+      {tags.length > 0 && (
+        <div className="tags">
+          {tags.slice(0,2).map(([k,{label,cls}])=>(
+            <span key={k} className={`badge ${cls}`}>{label}</span>
+          ))}
+          {tags.length>2 && <span className="badge badge-gray">+{tags.length-2}</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════
+// Dashboard
+// ════════════════════════════════════
+function Dashboard({ userInfo, googleToken, onLogout }) {
+  const [photos, setPhotos] = useState([])
+  const [analyzed, setAnalyzed] = useState({})
+  const [selected, setSelected] = useState(new Set())
+  const [filter, setFilter] = useState('all')
+  const [view, setView] = useState('grid')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [progress, setProgress] = useState({c:0,t:0})
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextPage, setNextPage] = useState(null)
+  const [status, setStatus] = useState('')
+  const [statusType, setStatusType] = useState('warn')
+  const [initialLoading, setInitialLoading] = useState(true)
+  const BATCH = 50
+
+  const showStatus = (msg, type='warn', ms=3500) => {
+    setStatus(msg); setStatusType(type)
+    if (ms) setTimeout(()=>setStatus(''), ms)
+  }
+
+  // Load photos
+  const loadPhotos = useCallback(async (page=null) => {
+    if (!page) setInitialLoading(true); else setLoadingMore(true)
+    try {
+      const params = new URLSearchParams({ pageSize:'100' })
+      if (page) params.set('pageToken', page)
+      const r = await fetch(`/api/photos?${params}`, { headers:{'X-Google-Token':googleToken}, credentials:'include' })
+      if (!r.ok) { const d=await r.json(); throw new Error(d.error||'Erro ao buscar fotos') }
+      const d = await r.json()
+      setPhotos(prev => page ? [...prev, ...d.photos] : d.photos)
+      setNextPage(d.nextPageToken||null)
+    } catch(e) { showStatus(`Erro: ${e.message}`, 'error', 5000) }
+    finally { setInitialLoading(false); setLoadingMore(false) }
+  }, [googleToken])
+
+  useEffect(() => {
+    // Restore analysis from localStorage
+    const saved = loadState()
+    if (saved?.analyzed) setAnalyzed(saved.analyzed)
+    loadPhotos()
+  }, [])
+
+  // Analyze batch
+  const analyze = async () => {
+    const unanalyzed = photos.filter(p=>!analyzed[p.id]).slice(0,BATCH)
+    if (!unanalyzed.length) { showStatus('Todas as fotos já foram analisadas!','ok'); return }
+    setAnalyzing(true); setProgress({c:0,t:unanalyzed.length})
+    const newAn = {...analyzed}
+    for (let i=0; i<unanalyzed.length; i++) {
+      const p = unanalyzed[i]
+      try {
+        const r = await fetch('/api/analyze', {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ photoId:p.id, thumbnailUrl: p.baseUrl?`${p.baseUrl}=w512-h512-c`:null })
+        })
+        const d = await r.json()
+        if (r.ok) newAn[p.id] = d; else newAn[p.id] = {error:true}
+      } catch { newAn[p.id] = {error:true} }
+      setAnalyzed({...newAn}); setProgress({c:i+1,t:unanalyzed.length})
+    }
+    setAnalyzing(false)
+    const saved = loadState(); saveState({...saved, analyzed:newAn})
+    showStatus(`✅ ${unanalyzed.length} fotos analisadas!`, 'ok')
+  }
+
+  // Delete
+  const deleteSelected = async () => {
+    if (!selected.size) return
+    showStatus('Movendo para a lixeira...', 'warn', 0)
+    try {
+      const ids = Array.from(selected)
+      const r = await fetch('/api/photos/delete', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({photoIds:ids})
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error||'Erro ao deletar')
+      const newPhotos = photos.filter(p=>!selected.has(p.id))
+      const newAn = {...analyzed}; ids.forEach(id=>delete newAn[id])
+      setPhotos(newPhotos); setAnalyzed(newAn); setSelected(new Set())
+      const saved = loadState(); saveState({...saved, analyzed:newAn})
+      showStatus(`✅ ${ids.length} foto(s) enviadas para a lixeira`, 'ok')
+    } catch(e) { showStatus(`Erro: ${e.message}`, 'error', 5000) }
+  }
+
+  const filtered = photos.filter(p => {
+    const a = analyzed[p.id]
+    if (filter==='all') return true
+    if (filter==='util') return a?.util===true
+    return a?.[filter]===true
+  })
+
+  const countFor = k => k==='all' ? photos.length : k==='util'
+    ? Object.values(analyzed).filter(a=>a.util).length
+    : Object.values(analyzed).filter(a=>a[k]).length
+
+  const analyzedCount = Object.keys(analyzed).length
+  const badCount = Object.values(analyzed).filter(a=>a.ruim).length
+
+  const toggleSelect = id => setSelected(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n })
+  const selectAllBad = () => setSelected(new Set(filtered.filter(p=>analyzed[p.id]?.ruim).map(p=>p.id)))
+  const toggleAll = () => {
+    const ids = filtered.map(p=>p.id)
+    setSelected(prev => ids.every(id=>prev.has(id)) ? new Set() : new Set(ids))
+  }
+
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+      {/* Header */}
+      <div className="header">
+        <div className="logo">
+          <div className="logo-icon">📸</div>
+          <span className="logo-text">PhotoClean</span>
+          <div style={{ display:'flex', gap:12, marginLeft:12, fontSize:12, color:'var(--text3)' }}>
+            <span style={{display:'none'}} id="hd-stats">
+              <span style={{color:'var(--text)'}}>{photos.length}</span> fotos &nbsp;
+              <span style={{color:'var(--amber)'}}>{analyzedCount}</span> analisadas
+              {badCount>0 && <> &nbsp;<span style={{color:'var(--coral)'}}>{badCount}</span> ruins</>}
+            </span>
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button className={`btn btn-ghost btn-sm`} onClick={()=>setView(v=>v==='grid'?'chat':'grid')}>
+            {view==='grid' ? '💬 Chat' : '📷 Fotos'}
+          </button>
+          {userInfo?.picture && <img src={userInfo.picture} alt="" style={{width:28,height:28,borderRadius:'50%',border:'2px solid var(--border)'}} />}
+          <button className="btn btn-ghost btn-sm" onClick={onLogout}>Sair</button>
+        </div>
+      </div>
+
+      {/* Quota notice */}
+      <div className="quota-bar">⚡ Usa sua quota Gemini gratuita (~1.500 req/dia). Analisa em batches de 50 fotos.</div>
+
+      <div className="section" style={{ flex:1, paddingTop:14, paddingBottom:24 }}>
+        {view==='chat' ? (
+          <ChatView photos={photos} analyzed={analyzed} onSelect={ids=>{setSelected(new Set(ids));setView('grid')}} />
+        ) : (
+          <>
+            {/* Toolbar */}
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
+              <button className="btn btn-primary btn-sm" onClick={analyze} disabled={analyzing||initialLoading}>
+                {analyzing ? <><Spinner size={13} color="#0a0a0f"/> Analisando {progress.c}/{progress.t}</> : <> ✨ Analisar com IA {photos.filter(p=>!analyzed[p.id]).length>0&&`(${Math.min(photos.filter(p=>!analyzed[p.id]).length,BATCH)})`}</>}
+              </button>
+              {nextPage && (
+                <button className="btn btn-ghost btn-sm" onClick={()=>loadPhotos(nextPage)} disabled={loadingMore}>
+                  {loadingMore ? <><Spinner size={13}/>Carregando...</> : '+ Carregar mais fotos'}
+                </button>
+              )}
+              <div style={{flex:1}} />
+              {analyzedCount>0 && badCount>0 && (
+                <button className="btn btn-ghost btn-sm" onClick={selectAllBad} style={{color:'var(--coral)',borderColor:'rgba(244,63,94,.3)'}}>
+                  ⚠️ Selecionar ruins ({badCount})
+                </button>
+              )}
+              {filtered.length>0 && (
+                <button className="btn btn-ghost btn-sm" onClick={toggleAll}>
+                  {filtered.every(p=>selected.has(p.id)) ? 'Desmarcar todos' : 'Selecionar todos'}
+                </button>
+              )}
+              {selected.size>0 && (
+                <button className="btn btn-danger btn-sm" onClick={deleteSelected}>
+                  🗑️ Deletar {selected.size} selecionada{selected.size>1?'s':''}
+                </button>
+              )}
+            </div>
+
+            {/* Progress */}
+            {analyzing && (
+              <div className="card" style={{padding:'12px 16px', marginBottom:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:13}}>
+                  <span style={{color:'var(--amber)',fontWeight:600}}>✨ Gemini analisando...</span>
+                  <span style={{color:'var(--text3)',fontFamily:'JetBrains Mono,monospace',fontSize:12}}>{progress.c}/{progress.t}</span>
+                </div>
+                <div style={{height:4,background:'var(--bg2)',borderRadius:99,overflow:'hidden'}}>
+                  <div className="progress-bar" style={{height:'100%',width:`${progress.t>0?Math.round(progress.c/progress.t*100):0}%`,borderRadius:99,transition:'width .4s'}} />
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            {status && <div className={`alert alert-${statusType}`} style={{marginBottom:10}}>{status}</div>}
+
+            {/* Filters */}
+            {analyzedCount>0 && (
+              <div className="filter-bar" style={{marginBottom:12}}>
+                {FILTER_OPTS.map(f=>(
+                  <div key={f.key} className={`pill${filter===f.key?' active':''}`} onClick={()=>setFilter(f.key)}>
+                    {f.emoji} {f.label} <span style={{opacity:.6,marginLeft:2}}>{countFor(f.key)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Grid */}
+            {initialLoading ? (
+              <div className="empty-state"><Spinner size={32} color="var(--amber)" /><p style={{marginTop:10}}>Carregando fotos...</p></div>
+            ) : filtered.length===0 ? (
+              <div className="empty-state">
+                <span style={{fontSize:48}}>📭</span>
+                <p style={{fontWeight:600}}>Nenhuma foto nessa categoria</p>
+                <p style={{fontSize:13}}>Tente outro filtro ou analise mais fotos</p>
+              </div>
+            ) : (
+              <div className="photo-grid">
+                {filtered.map(p=>(
+                  <PhotoCard key={p.id} photo={p} analysis={analyzed[p.id]} selected={selected.has(p.id)} onToggle={()=>toggleSelect(p.id)} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════
+// Chat View
+// ════════════════════════════════════
+function ChatView({ photos, analyzed, onSelect }) {
+  const [msgs, setMsgs] = useState([{role:'bot',text:`Olá! 👋 Tenho ${photos.length} fotos suas com ${Object.keys(analyzed).length} analisadas.\n\nExemplos: "mostra fotos borradas", "quais são as piores?", "seleciona screenshots"`}])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef(null)
+
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}) }, [msgs])
+
+  const send = async (text) => {
+    const t = (text||input).trim(); if (!t||loading) return
+    setInput(''); setMsgs(m=>[...m,{role:'user',text:t}]); setLoading(true)
+    try {
+      const r = await fetch('/api/chat', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ message:t, photos:photos.map(p=>({id:p.id,filename:p.filename})), analyzed })
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error)
+      setMsgs(m=>[...m,{role:'bot',text:d.response,ids:d.filteredIds}])
+      if (d.filteredIds?.length) onSelect(d.filteredIds)
+    } catch(e) {
+      setMsgs(m=>[...m,{role:'bot',text:`❌ ${e.message}`}])
+    } finally { setLoading(false) }
+  }
+
+  const SUGS = ['Fotos borradas','Piores fotos','Screenshots','Fotos escuras','Memes']
+
+  return (
+    <div style={{ height:'calc(100vh - 180px)', display:'flex', flexDirection:'column', minHeight:400 }}>
+      <div className="chat-messages">
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+            {m.role==='bot'&&<div style={{width:28,height:28,borderRadius:8,background:'var(--amber)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,marginRight:8,flexShrink:0,marginTop:2}}>✨</div>}
+            <div className={`chat-bubble ${m.role}`}>
+              {m.text.split('\n').map((l,j)=><span key={j}>{l}{j<m.text.split('\n').length-1&&<br/>}</span>)}
+              {m.ids?.length>0&&<div style={{marginTop:6,paddingTop:6,borderTop:'1px solid var(--border)',fontSize:11,color:'var(--amber)'}}>✓ {m.ids.length} foto(s) selecionadas na galeria</div>}
+            </div>
+          </div>
+        ))}
+        {loading&&<div style={{display:'flex',gap:8,alignItems:'center'}}><div style={{width:28,height:28,borderRadius:8,background:'var(--amber)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13}}>✨</div><div className="chat-bubble bot" style={{display:'flex',alignItems:'center',gap:8}}><Spinner size={14} color="var(--amber)"/><span style={{color:'var(--text3)',fontSize:12}}>Pensando...</span></div></div>}
+        <div ref={bottomRef} />
+      </div>
+      {msgs.length<=1&&<div style={{display:'flex',gap:6,flexWrap:'wrap',paddingBottom:8}}>{SUGS.map(s=><button key={s} className="btn btn-ghost btn-sm" onClick={()=>send(s)}>{s}</button>)}</div>}
+      <div style={{display:'flex',gap:8,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+        <input className="input" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder="Ex: mostra fotos borradas, deleta prints antigos..." disabled={loading} style={{flex:1}} />
+        <button className="btn btn-primary" onClick={()=>send()} disabled={!input.trim()||loading} style={{width:44,height:44,padding:0,justifyContent:'center',borderRadius:10,flexShrink:0}}>→</button>
+      </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════
+// Google SVG icon
+// ════════════════════════════════════
+function GoogleSvg() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="rgba(10,10,15,.75)"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="rgba(10,10,15,.75)"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="rgba(10,10,15,.75)"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="rgba(10,10,15,.75)"/>
+    </svg>
+  )
+}
+
+// ════════════════════════════════════
+// Root App
+// ════════════════════════════════════
+function App() {
+  const [step, setStep] = useState('landing')
+  const [googleToken, setGoogleToken] = useState(null)
+  const [userInfo, setUserInfo] = useState(null)
+
+  useEffect(()=>{
+    try {
+      const s = loadState()
+      if (s?.geminiReady && s?.googleToken) {
+        setGoogleToken(s.googleToken); setUserInfo(s.userInfo||null); setStep('dashboard')
+      }
+    } catch {}
+  }, [])
+
+  const onGoogle = useCallback((tok,info)=>{ setGoogleToken(tok); setUserInfo(info); setStep('gemini') },[])
+  const onGemini = useCallback(()=>{ saveState({...loadState(), googleToken, userInfo, geminiReady:true}); setStep('dashboard') },[googleToken,userInfo])
+  const onLogout = useCallback(()=>{
+    try { window.google?.accounts?.oauth2?.revoke(googleToken,()=>{}) } catch {}
+    fetch('/api/session',{method:'DELETE'}).catch(()=>{})
+    saveState(null); setGoogleToken(null); setUserInfo(null); setStep('landing')
+  },[googleToken])
+
+  if (step==='landing')   return <LandingPage onSuccess={onGoogle} />
+  if (step==='gemini')    return <GeminiSetup userInfo={userInfo} googleToken={googleToken} onReady={onGemini} onLogout={onLogout} />
+  if (step==='dashboard') return <Dashboard userInfo={userInfo} googleToken={googleToken} onLogout={onLogout} />
+  return null
+}
+
+// Mount
+const root = ReactDOM.createRoot(document.getElementById('app'))
+root.render(<App />)
+</script>
+</body>
+</html>
