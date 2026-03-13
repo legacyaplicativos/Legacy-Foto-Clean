@@ -178,7 +178,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 
-const STORAGE_KEY = 'photoclean_v2'
+const STORAGE_KEY = 'photoclean_v3'
 function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') } catch { return null } }
 function saveState(data) { try { if (data === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch {} }
 
@@ -767,14 +767,14 @@ function App() {
   useEffect(()=>{
     try {
       const s = loadState()
-      if (s?.geminiReady && s?.googleToken) {
-        setGoogleToken(s.googleToken); setUserInfo(s.userInfo||null); setStep('dashboard')
+      if (s?.geminiReady) {
+        setUserInfo(s.userInfo||null); setStep('landing')
       }
     } catch {}
   }, [])
 
   const onGoogle = useCallback((tok,info)=>{ setGoogleToken(tok); setUserInfo(info); setStep('gemini') },[])
-  const onGemini = useCallback(()=>{ saveState({...loadState(), googleToken, userInfo, geminiReady:true}); setStep('dashboard') },[googleToken,userInfo])
+  const onGemini = useCallback(()=>{ saveState({...loadState(), userInfo, geminiReady:true, googleToken:null}); setStep('dashboard') },[googleToken,userInfo])
   const onLogout = useCallback(()=>{
     try { window.google?.accounts?.oauth2?.revoke(googleToken,()=>{}) } catch {}
     fetch('/api/session',{method:'DELETE'}).catch(()=>{})
