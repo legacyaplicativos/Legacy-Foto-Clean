@@ -1,4 +1,5 @@
 // netlify/functions/photos.js
+// Uses Google Drive API (drive.photos.readonly) - less restricted than Photos Library API
 
 function getCorsHeaders(origin) {
   return {
@@ -17,9 +18,7 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' }
   }
 
-  // Netlify lowercases all headers
   const googleToken = event.headers['x-google-token']
-
   if (!googleToken) {
     return {
       statusCode: 401,
@@ -30,12 +29,21 @@ exports.handler = async (event) => {
 
   const pageSize = event.queryStringParameters?.pageSize || '50'
   const pageToken = event.queryStringParameters?.pageToken || null
-  const params = new URLSearchParams({ pageSize })
+
+  // Use Google Drive API with drive.photos.readonly scope
+  // This fetches images/videos from Google Photos via Drive
+  const params = new URLSearchParams({
+    q: "mimeType contains 'image/' or mimeType contains 'video/'",
+    fields: 'nextPageToken,files(id,name,mimeType,thumbnailLink,webViewLink,webContentLink,imageMediaMetadata,videoMediaMetadata,createdTime,size)',
+    pageSize: pageSize,
+    orderBy: 'createdTime desc',
+    spaces: 'photos',
+  })
   if (pageToken) params.set('pageToken', pageToken)
 
   try {
     const response = await fetch(
-      `https://photoslibrary.googleapis.com/v1/mediaItems?${params}`,
+      `https://www.googleapis.com/drive/v3/files?${params}`,
       { headers: { Authorization: `Bearer ${googleToken}` } }
     )
 
@@ -46,16 +54,21 @@ exports.handler = async (event) => {
       return {
         statusCode: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: `Google Photos: ${googleError}` })
+        body: JSON.stringify({ error: `Google Drive API: ${googleError}` })
       }
     }
 
-    const photos = (data.mediaItems || []).map(item => ({
+    const photos = (data.files || []).map(item => ({
       id: item.id,
-      baseUrl: item.baseUrl,
-      filename: item.filename,
-      mediaMetadata: item.mediaMetadata,
-      productUrl: item.productUrl,
+      baseUrl: item.thumbnailLink ? item.thumbnailLink.replace('=s220', '=s512') : null,
+      filename: item.name,
+      mimeType: item.mimeType,
+      productUrl: item.webViewLink,
+      mediaMetadata: {
+        creationTime: item.createdTime,
+        width: item.imageMediaMetadata?.width,
+        height: item.imageMediaMetadata?.height,
+      }
     }))
 
     return {

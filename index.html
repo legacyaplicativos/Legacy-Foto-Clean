@@ -172,8 +172,7 @@ const { useState, useEffect, useCallback, useRef } = React;
 // ════════════════════════════════════
 const CLIENT_ID = window.PHOTOCLEAN_CONFIG?.GOOGLE_CLIENT_ID || ''
 const SCOPES = [
-  'https://www.googleapis.com/auth/photoslibrary.readonly',
-  'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata',
+  'https://www.googleapis.com/auth/drive.photos.readonly',
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
@@ -239,8 +238,8 @@ function LandingPage({ onSuccess }) {
             const tokenInfo = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${resp.access_token}`)
             const info = await tokenInfo.json()
             const grantedScopes = info.scope || ''
-            if (!grantedScopes.includes('photoslibrary')) {
-              setError('O Google não concedeu acesso às fotos. Verifique se a Photos Library API está ativada e tente novamente.')
+            if (!grantedScopes.includes('drive.photos.readonly')) {
+              setError('O Google não concedeu acesso às fotos. Tente novamente e aceite todas as permissões.')
               setLoading(false)
               return
             }
