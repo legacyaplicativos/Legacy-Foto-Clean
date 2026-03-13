@@ -2,10 +2,10 @@
 
 function getCorsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': origin || '*',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Google-Token',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Google-Token, x-google-token',
   }
 }
 
@@ -17,27 +17,38 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' }
   }
 
+  // Netlify lowercases all headers
   const googleToken = event.headers['x-google-token']
+
   if (!googleToken) {
     return {
       statusCode: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Token Google ausente.' })
+      body: JSON.stringify({ error: 'Token do Google não encontrado. Faça login novamente.' })
     }
   }
 
-  const { pageToken, pageSize = '100' } = event.queryStringParameters || {}
+  const pageSize = event.queryStringParameters?.pageSize || '50'
+  const pageToken = event.queryStringParameters?.pageToken || null
   const params = new URLSearchParams({ pageSize })
   if (pageToken) params.set('pageToken', pageToken)
 
   try {
-    const res = await fetch(
+    const response = await fetch(
       `https://photoslibrary.googleapis.com/v1/mediaItems?${params}`,
       { headers: { Authorization: `Bearer ${googleToken}` } }
     )
-    const data = await res.json()
 
-    if (!res.ok) throw new Error(data.error?.message || 'Erro ao buscar fotos')
+    const data = await response.json()
+
+    if (!response.ok) {
+      const googleError = data?.error?.message || JSON.stringify(data)
+      return {
+        statusCode: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: `Google Photos: ${googleError}` })
+      }
+    }
 
     const photos = (data.mediaItems || []).map(item => ({
       id: item.id,
@@ -52,11 +63,12 @@ exports.handler = async (event) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ photos, nextPageToken: data.nextPageToken || null })
     }
+
   } catch (e) {
     return {
       statusCode: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: e.message })
+      body: JSON.stringify({ error: `Erro interno: ${e.message}` })
     }
   }
 }

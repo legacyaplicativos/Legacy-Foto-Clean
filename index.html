@@ -303,7 +303,7 @@ function LandingPage({ onSuccess }) {
         {error && <div className="alert alert-error" style={{ marginTop: 14, maxWidth: 440, textAlign: 'left' }}>⚠️ {error}</div>}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginTop: 36, justifyContent: 'center', color: 'var(--text3)', fontSize: 12 }}>
-          {['🔒 OAuth 2.0','⚡ Gemini 1.5 Flash','📦 Batches de 50 fotos'].map(t => <span key={t}>{t}</span>)}
+          {['🔒 OAuth 2.0','⚡ Gemini 2.5 Flash','📦 Batches de 50 fotos'].map(t => <span key={t}>{t}</span>)}
         </div>
       </main>
 
@@ -375,7 +375,7 @@ function GeminiSetup({ userInfo, googleToken, onReady, onLogout }) {
             <div>
               <h2 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: '1.6rem', marginBottom: 8 }}>Configure o Gemini</h2>
               <p style={{ color: 'var(--text2)', fontSize: 14, lineHeight: 1.65, marginBottom: 20 }}>
-                O PhotoClean usa o <strong style={{ color: 'var(--amber)' }}>Gemini 1.5 Flash</strong> — gratuito, até 1.500 requests/dia.
+                O PhotoClean usa o <strong style={{ color: 'var(--amber)' }}>Gemini 2.5 Flash</strong> — gratuito, até 1.500 requests/dia.
                 Você precisa de uma chave pessoal.
               </p>
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
@@ -500,7 +500,7 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
       const d = await r.json()
       setPhotos(prev => page ? [...prev, ...d.photos] : d.photos)
       setNextPage(d.nextPageToken||null)
-    } catch(e) { showStatus(`Erro: ${e.message}`, 'error', 5000) }
+    } catch(e) { showStatus(`❌ ${e.message} — Verifique se a 'Photos Library API' está ativada no Google Cloud.`, 'error', 10000) }
     finally { setInitialLoading(false); setLoadingMore(false) }
   }, [googleToken])
 
@@ -553,7 +553,7 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
       setPhotos(newPhotos); setAnalyzed(newAn); setSelected(new Set())
       const saved = loadState(); saveState({...saved, analyzed:newAn})
       showStatus(`✅ ${ids.length} foto(s) enviadas para a lixeira`, 'ok')
-    } catch(e) { showStatus(`Erro: ${e.message}`, 'error', 5000) }
+    } catch(e) { showStatus(`❌ ${e.message} — Verifique se a 'Photos Library API' está ativada no Google Cloud.`, 'error', 10000) }
   }
 
   const filtered = photos.filter(p => {
