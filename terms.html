@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Termos de Uso — PhotoClean</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #fff; line-height: 1.8; }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 60px 24px 80px; }
+
+    .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 56px; text-decoration: none; }
+    .logo-icon { width: 40px; height: 40px; background: #fbbf24; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .logo-name { font-size: 22px; font-weight: 700; color: #fff; }
+
+    .hero { margin-bottom: 56px; }
+    .hero h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 10px; line-height: 1.2; }
+    .hero .sub { color: rgba(255,255,255,0.4); font-size: 14px; }
+
+    .toc { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px 28px; margin-bottom: 48px; }
+    .toc p { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+    .toc a { display: block; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; padding: 4px 0; transition: color .15s; }
+    .toc a:hover { color: #fbbf24; }
+    .toc a::before { content: "→ "; color: rgba(255,255,255,0.2); }
+
+    h2 { font-size: 1.25rem; font-weight: 700; color: #fbbf24; margin: 48px 0 14px; display: flex; align-items: center; gap: 10px; }
+    h2 .num { background: rgba(251,191,36,0.12); color: #fbbf24; border-radius: 6px; padding: 2px 9px; font-size: 13px; font-weight: 700; }
+
+    p { color: rgba(255,255,255,0.65); margin-bottom: 14px; font-size: 15px; }
+    ul { color: rgba(255,255,255,0.65); margin: 0 0 16px 20px; font-size: 15px; }
+    ul li { margin-bottom: 8px; }
+
+    .highlight { background: rgba(251,191,36,0.08); border-left: 3px solid #fbbf24; border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 20px 0; }
+    .highlight p { margin: 0; color: rgba(255,255,255,0.8); }
+
+    .warn { background: rgba(239,68,68,0.08); border-left: 3px solid #ef4444; border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 20px 0; }
+    .warn p { margin: 0; color: rgba(255,255,255,0.8); }
+
+    .divider { height: 1px; background: rgba(255,255,255,0.07); margin: 48px 0; }
+
+    a { color: #fbbf24; }
+    a:hover { text-decoration: underline; }
+
+    footer { text-align: center; color: rgba(255,255,255,0.25); font-size: 13px; margin-top: 64px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.07); }
+    footer a { color: rgba(255,255,255,0.4); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="logo" href="/">
+    <div class="logo-icon">📸</div>
+    <span class="logo-name">PhotoClean</span>
+  </a>
+
+  <div class="hero">
+    <h1>Termos de Uso</h1>
+    <p class="sub">Última atualização: junho de 2025 &nbsp;·&nbsp; Versão 1.0</p>
+  </div>
+
+  <div class="highlight">
+    <p>📋 <strong>Resumo simples:</strong> ao usar o PhotoClean você concorda com estes termos. O serviço é gratuito, você mantém a propriedade das suas fotos e pode parar de usar quando quiser.</p>
+  </div>
+
+  <div class="toc">
+    <p>Conteúdo</p>
+    <a href="#aceitacao">1. Aceitação dos Termos</a>
+    <a href="#servico">2. Descrição do Serviço</a>
+    <a href="#conta">3. Conta e Responsabilidades</a>
+    <a href="#uso">4. Uso Permitido e Proibido</a>
+    <a href="#dados">5. Seus Dados e Fotos</a>
+    <a href="#api">6. Serviços de Terceiros</a>
+    <a href="#disponibilidade">7. Disponibilidade</a>
+    <a href="#limitacao">8. Limitação de Responsabilidade</a>
+    <a href="#modificacoes">9. Modificações</a>
+    <a href="#rescisao">10. Encerramento de Conta</a>
+    <a href="#lei">11. Lei Aplicável</a>
+    <a href="#contato">12. Contato</a>
+  </div>
+
+  <h2 id="aceitacao"><span class="num">1</span> Aceitação dos Termos</h2>
+  <p>Ao acessar ou usar o PhotoClean, você confirma que leu, entendeu e concorda com estes Termos de Uso e com nossa <a href="/privacy">Política de Privacidade</a>.</p>
+  <p>Se você não concordar com qualquer parte destes termos, não utilize o serviço.</p>
+
+  <h2 id="servico"><span class="num">2</span> Descrição do Serviço</h2>
+  <p>O PhotoClean é uma ferramenta gratuita que utiliza inteligência artificial (API Gemini do Google) para analisar e organizar fotos da sua conta Google Photos. O serviço permite:</p>
+  <ul>
+    <li>Visualizar e organizar fotos do seu Google Photos</li>
+    <li>Analisar fotos automaticamente com IA para identificar itens como screenshots, fotos borradas, duplicatas e documentos</li>
+    <li>Mover fotos selecionadas para a lixeira</li>
+    <li>Interagir via chat com a IA para filtrar e encontrar fotos</li>
+  </ul>
+
+  <h2 id="conta"><span class="num">3</span> Conta e Responsabilidades</h2>
+  <p>Para usar o PhotoClean você precisa de uma conta Google ativa. Você é responsável por:</p>
+  <ul>
+    <li>Manter a segurança da sua conta Google</li>
+    <li>Guardar sua chave da API Gemini em local seguro</li>
+    <li>Todas as ações realizadas no serviço com sua conta</li>
+    <li>Verificar as fotos antes de enviá-las para a lixeira</li>
+  </ul>
+
+  <div class="warn">
+    <p>⚠️ <strong>Atenção:</strong> a exclusão de fotos é uma ação que move os itens para a lixeira do Google Photos. O PhotoClean não se responsabiliza por fotos excluídas acidentalmente. Revise sempre antes de confirmar a exclusão.</p>
+  </div>
+
+  <h2 id="uso"><span class="num">4</span> Uso Permitido e Proibido</h2>
+  <p><strong>É permitido:</strong></p>
+  <ul>
+    <li>Usar o serviço para gerenciar suas próprias fotos pessoais</li>
+    <li>Compartilhar o serviço com outras pessoas</li>
+    <li>Usar para fins pessoais ou profissionais</li>
+  </ul>
+  <p><strong>É proibido:</strong></p>
+  <ul>
+    <li>Tentar burlar ou hackear o sistema</li>
+    <li>Usar o serviço para processar fotos de terceiros sem autorização</li>
+    <li>Utilizar o serviço para fins ilegais</li>
+    <li>Fazer engenharia reversa ou copiar o código sem permissão</li>
+    <li>Sobrecarregar os servidores com requisições automatizadas em massa</li>
+  </ul>
+
+  <h2 id="dados"><span class="num">5</span> Seus Dados e Fotos</h2>
+  <p>Você mantém total propriedade sobre suas fotos e dados. O PhotoClean:</p>
+  <ul>
+    <li><strong>Não armazena</strong> suas fotos em nenhum servidor próprio</li>
+    <li><strong>Não vende</strong> seus dados para terceiros</li>
+    <li>Acessa suas fotos somente para análise temporária durante a sessão ativa</li>
+    <li>Processa thumbnails pequenos (512×512 pixels) para análise — não as fotos em resolução original</li>
+  </ul>
+  <p>Para detalhes completos sobre tratamento de dados, consulte nossa <a href="/privacy">Política de Privacidade</a>.</p>
+
+  <h2 id="api"><span class="num">6</span> Serviços de Terceiros</h2>
+  <p>O PhotoClean depende de serviços externos que possuem seus próprios termos:</p>
+  <ul>
+    <li><strong>Google OAuth:</strong> autenticação da sua conta Google</li>
+    <li><strong>Google Drive API:</strong> acesso às fotos do Google Photos</li>
+    <li><strong>API Gemini (Google):</strong> análise de imagens com inteligência artificial</li>
+    <li><strong>Netlify:</strong> hospedagem do serviço</li>
+  </ul>
+  <p>O PhotoClean não se responsabiliza por mudanças, interrupções ou políticas desses serviços terceiros. O uso da API Gemini está sujeito aos <a href="https://ai.google.dev/terms" target="_blank">Termos de Serviço do Google AI</a>.</p>
+
+  <h2 id="disponibilidade"><span class="num">7</span> Disponibilidade</h2>
+  <p>O PhotoClean é oferecido gratuitamente e sem garantia de disponibilidade contínua. O serviço pode:</p>
+  <ul>
+    <li>Passar por manutenções e ficar temporariamente indisponível</li>
+    <li>Ser modificado, atualizado ou descontinuado a qualquer momento</li>
+    <li>Ter limitações impostas pelos serviços do Google (cotas, mudanças de API, etc.)</li>
+  </ul>
+
+  <h2 id="limitacao"><span class="num">8</span> Limitação de Responsabilidade</h2>
+  <p>O PhotoClean é fornecido "como está", sem garantias expressas ou implícitas. Não nos responsabilizamos por:</p>
+  <ul>
+    <li>Perda de fotos decorrente do uso do serviço</li>
+    <li>Erros na análise de IA (classificações incorretas)</li>
+    <li>Indisponibilidade do serviço</li>
+    <li>Danos causados por uso inadequado</li>
+    <li>Alterações nas APIs do Google que afetem o funcionamento</li>
+  </ul>
+
+  <div class="highlight">
+    <p>💡 <strong>Dica:</strong> sempre revise as sugestões da IA antes de excluir fotos. A inteligência artificial pode cometer erros e classificar incorretamente algumas imagens.</p>
+  </div>
+
+  <h2 id="modificacoes"><span class="num">9</span> Modificações</h2>
+  <p>Podemos atualizar estes Termos de Uso a qualquer momento. Quando isso ocorrer, atualizaremos a data no topo desta página. Recomendamos revisitar periodicamente.</p>
+  <p>O uso continuado do serviço após alterações constitui aceitação dos novos termos.</p>
+
+  <h2 id="rescisao"><span class="num">10</span> Encerramento de Conta</h2>
+  <p>Você pode parar de usar o PhotoClean a qualquer momento. Para revogar completamente o acesso:</p>
+  <ul>
+    <li>Acesse <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a></li>
+    <li>Encontre o PhotoClean na lista</li>
+    <li>Clique em "Remover acesso"</li>
+  </ul>
+  <p>Isso encerrará todos os acessos do app à sua conta Google imediatamente.</p>
+
+  <h2 id="lei"><span class="num">11</span> Lei Aplicável</h2>
+  <p>Estes termos são regidos pelas leis brasileiras, em especial a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018) e o Código de Defesa do Consumidor.</p>
+
+  <h2 id="contato"><span class="num">12</span> Contato</h2>
+  <p>Dúvidas sobre estes termos? Entre em contato:</p>
+  <ul>
+    <li>E-mail: <a href="mailto:legacyaplicativos@gmail.com">legacyaplicativos@gmail.com</a></li>
+    <li>Site: <a href="https://legacyfotoclean.netlify.app">legacyfotoclean.netlify.app</a></li>
+  </ul>
+
+  <div class="divider"></div>
+
+  <footer>
+    PhotoClean &nbsp;·&nbsp;
+    <a href="/privacy">Política de Privacidade</a> &nbsp;·&nbsp;
+    <a href="/">Voltar ao site</a>
+    <br><br>
+    © 2025 PhotoClean. Todos os direitos reservados.
+  </footer>
+
+</div>
+</body>
+</html>
