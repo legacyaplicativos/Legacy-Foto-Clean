@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidade — PhotoClean</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #fff; line-height: 1.7; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 60px 24px; }
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 48px; }
+    .logo-icon { width: 36px; height: 36px; background: #fbbf24; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-name { font-size: 20px; font-weight: 700; }
+    h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+    .updated { color: rgba(255,255,255,0.4); font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 1.1rem; font-weight: 700; color: #fbbf24; margin: 36px 0 12px; }
+    p { color: rgba(255,255,255,0.7); margin-bottom: 14px; font-size: 15px; }
+    ul { color: rgba(255,255,255,0.7); margin: 0 0 14px 20px; font-size: 15px; }
+    ul li { margin-bottom: 6px; }
+    .box { background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 20px 24px; margin: 32px 0; }
+    .box p { color: rgba(255,255,255,0.85); margin: 0; }
+    a { color: #fbbf24; }
+    .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 40px 0; }
+    footer { color: rgba(255,255,255,0.3); font-size: 13px; margin-top: 60px; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">
+    <div class="logo-icon">📸</div>
+    <span class="logo-name">PhotoClean</span>
+  </div>
+
+  <h1>Política de Privacidade</h1>
+  <p class="updated">Última atualização: junho de 2025</p>
+
+  <div class="box">
+    <p>⚡ <strong>Resumo simples:</strong> o PhotoClean não armazena suas fotos, não vende seus dados e não guarda nada em servidores próprios. Tudo fica na sua conta Google.</p>
+  </div>
+
+  <h2>1. O que é o PhotoClean</h2>
+  <p>O PhotoClean é uma ferramenta gratuita que usa inteligência artificial para ajudar você a identificar e remover fotos desnecessárias do seu Google Photos — como screenshots, fotos borradas, duplicatas e memes antigos.</p>
+
+  <h2>2. Quais dados acessamos</h2>
+  <p>Para funcionar, o PhotoClean solicita acesso à sua conta Google com as seguintes permissões:</p>
+  <ul>
+    <li><strong>Google Photos (leitura):</strong> para listar e visualizar suas fotos</li>
+    <li><strong>Google Photos (exclusão):</strong> para mover fotos para a lixeira quando você solicita</li>
+    <li><strong>Perfil básico:</strong> nome e foto de perfil, apenas para exibir na interface</li>
+  </ul>
+
+  <h2>3. O que fazemos com seus dados</h2>
+  <ul>
+    <li>As fotos são acessadas <strong>apenas para análise temporária</strong> — baixamos um thumbnail pequeno (512×512), enviamos para a API do Gemini e descartamos imediatamente</li>
+    <li><strong>Não armazenamos</strong> suas fotos em nenhum servidor</li>
+    <li><strong>Não vendemos</strong> seus dados para terceiros</li>
+    <li><strong>Não compartilhamos</strong> suas informações com ninguém, exceto o Google (para autenticação) e a API Gemini (para análise)</li>
+  </ul>
+
+  <h2>4. API do Gemini (Google)</h2>
+  <p>A análise das fotos é feita pela API Gemini da Google. Os thumbnails enviados para análise estão sujeitos à <a href="https://ai.google.dev/terms" target="_blank">Política de Uso da API Gemini</a>. A chave de API é fornecida pelo próprio usuário e processada apenas durante a sessão ativa.</p>
+
+  <h2>5. Armazenamento local</h2>
+  <p>O PhotoClean salva no seu próprio navegador (localStorage) apenas:</p>
+  <ul>
+    <li>O resultado das análises já realizadas (para não repetir)</li>
+    <li>Preferências de sessão</li>
+  </ul>
+  <p>Esses dados ficam <strong>somente no seu dispositivo</strong> e podem ser apagados limpando os dados do navegador.</p>
+
+  <h2>6. Segurança</h2>
+  <p>A sua chave da API Gemini é criptografada (AES-256) e armazenada apenas em um cookie de sessão seguro. Ela nunca é registrada em logs nem enviada para terceiros que não sejam a própria API do Google.</p>
+
+  <h2>7. Exclusão de dados</h2>
+  <p>Como não armazenamos dados em servidores, não há nada para solicitar exclusão. Para remover os dados locais, basta limpar o histórico e dados do site no seu navegador.</p>
+  <p>Para revogar o acesso do PhotoClean à sua conta Google, acesse: <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a></p>
+
+  <h2>8. Crianças</h2>
+  <p>O PhotoClean não é direcionado a menores de 13 anos e não coleta dados de crianças intencionalmente.</p>
+
+  <h2>9. Alterações nesta política</h2>
+  <p>Podemos atualizar esta política eventualmente. A data no topo desta página indica a versão mais recente. O uso continuado do serviço após alterações constitui aceitação da nova política.</p>
+
+  <h2>10. Contato</h2>
+  <p>Dúvidas sobre privacidade? Entre em contato pelo e-mail: <a href="mailto:legacyaplicativos@gmail.com">legacyaplicativos@gmail.com</a></p>
+
+  <div class="divider"></div>
+  <footer>PhotoClean · <a href="https://legacyfotoclean.netlify.app">legacyfotoclean.netlify.app</a></footer>
+
+</div>
+</body>
+</html>

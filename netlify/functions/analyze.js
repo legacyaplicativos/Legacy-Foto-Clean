@@ -94,7 +94,7 @@ exports.handler = async (event) => {
 
     // Call Gemini
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${session.geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${session.geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
