@@ -1,5 +1,5 @@
 // netlify/functions/photos.js
-// Uses Google Drive API (drive.photos.readonly) - less restricted than Photos Library API
+// Uses Google Drive API with drive.photos.readonly scope
 
 function getCorsHeaders(origin) {
   return {
@@ -23,21 +23,20 @@ exports.handler = async (event) => {
     return {
       statusCode: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Token do Google não encontrado. Faça login novamente.' })
+      body: JSON.stringify({ error: 'Token não encontrado. Faça login novamente.' })
     }
   }
 
   const pageSize = event.queryStringParameters?.pageSize || '50'
   const pageToken = event.queryStringParameters?.pageToken || null
 
-  // Use Google Drive API with drive.photos.readonly scope
-  // This fetches images/videos from Google Photos via Drive
   const params = new URLSearchParams({
-    q: "mimeType contains 'image/' or mimeType contains 'video/'",
-    fields: 'nextPageToken,files(id,name,mimeType,thumbnailLink,webViewLink,webContentLink,imageMediaMetadata,videoMediaMetadata,createdTime,size)',
+    q: "(mimeType contains 'image/' or mimeType contains 'video/') and trashed=false",
+    fields: 'nextPageToken,files(id,name,mimeType,thumbnailLink,webViewLink,createdTime,imageMediaMetadata,videoMediaMetadata)',
     pageSize: pageSize,
     orderBy: 'createdTime desc',
-    spaces: 'photos',
+    spaces: 'drive',
+    corpora: 'user',
   })
   if (pageToken) params.set('pageToken', pageToken)
 
@@ -60,7 +59,7 @@ exports.handler = async (event) => {
 
     const photos = (data.files || []).map(item => ({
       id: item.id,
-      baseUrl: item.thumbnailLink ? item.thumbnailLink.replace('=s220', '=s512') : null,
+      baseUrl: item.thumbnailLink ? item.thumbnailLink.replace(/=s\d+/, '=s512') : null,
       filename: item.name,
       mimeType: item.mimeType,
       productUrl: item.webViewLink,

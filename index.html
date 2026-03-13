@@ -181,6 +181,35 @@ const STORAGE_KEY = 'photoclean_v3'
 function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') } catch { return null } }
 function saveState(data) { try { if (data === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch {} }
 
+
+// ════════════════════════════════════
+// 🐛 DEBUG LOGGER (não loga dados sensíveis)
+// ════════════════════════════════════
+const DEBUG = true
+const _log = (group, msg, data) => {
+  if (!DEBUG) return
+  const style = {
+    '🔐 AUTH':   'background:#6C3483;color:#fff;padding:2px 6px;border-radius:4px',
+    '📸 PHOTOS': 'background:#1A5276;color:#fff;padding:2px 6px;border-radius:4px',
+    '🤖 GEMINI': 'background:#1E8449;color:#fff;padding:2px 6px;border-radius:4px',
+    '🌐 API':    'background:#784212;color:#fff;padding:2px 6px;border-radius:4px',
+    '💾 STORE':  'background:#4A235A;color:#fff;padding:2px 6px;border-radius:4px',
+    '❌ ERROR':  'background:#922B21;color:#fff;padding:2px 6px;border-radius:4px',
+    '✅ OK':     'background:#1D6A39;color:#fff;padding:2px 6px;border-radius:4px',
+    '⚡ STEP':   'background:#1A237E;color:#fff;padding:2px 6px;border-radius:4px',
+  }
+  const s = style[group] || 'background:#333;color:#fff;padding:2px 6px;border-radius:4px'
+  if (data !== undefined) {
+    console.groupCollapsed(`%c${group}%c ${msg}`, s, 'color:inherit')
+    console.log(data)
+    console.groupEnd()
+  } else {
+    console.log(`%c${group}%c ${msg}`, s, 'color:inherit')
+  }
+}
+console.log('%c📸 PhotoClean Debug Mode Ativo ', 'background:#fbbf24;color:#000;font-weight:bold;padding:4px 10px;border-radius:6px;font-size:13px')
+console.log('%c⚠️  Dados sensíveis (tokens, chaves) nunca são exibidos aqui ', 'color:#fbbf24;font-size:11px')
+
 const FILTER_OPTS = [
   { key:'all',        label:'Todas',       emoji:'📷' },
   { key:'ruim',       label:'Ruins',       emoji:'🗑️' },
@@ -345,16 +374,18 @@ function GeminiSetup({ userInfo, googleToken, onReady, onLogout }) {
     if (!k.startsWith('AIza')) { setError('A chave deve começar com "AIza…"'); return }
     setError(''); setLoading(true)
     try {
+      _log('🤖 GEMINI', 'Enviando chave para /api/session...')
       const r = await fetch('/api/session', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ geminiKey: k, googleToken }),
       })
       const d = await r.json()
+      _log('✅ OK', `Fotos carregadas`, { total: d.photos?.length, temMaisPages: !!d.nextPageToken })
       if (!r.ok) throw new Error(d.error || 'Chave inválida')
       setOk(true)
       setTimeout(onReady, 700)
-    } catch(e) { setError(e.message); setLoading(false) }
+    } catch(e) { _log('❌ ERROR', 'Erro na sessão Gemini', e.message); setError(e.message); setLoading(false) }
   }
 
   return (
@@ -499,13 +530,20 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
 
   // Load photos
   const loadPhotos = useCallback(async (page=null) => {
+    _log('📸 PHOTOS', 'Buscando fotos...', { pagina: page || 'primeira' })
     if (!page) setInitialLoading(true); else setLoadingMore(true)
     try {
       const params = new URLSearchParams({ pageSize:'100' })
       if (page) params.set('pageToken', page)
+      _log('🌐 API', 'GET /api/photos', { pageSize: params.toString() })
       const r = await fetch(`/api/photos?${params}`, { headers:{'X-Google-Token':googleToken}, credentials:'include' })
-      if (!r.ok) { const d=await r.json(); throw new Error(d.error||'Erro ao buscar fotos') }
+      if (!r.ok) {
+        const d=await r.json()
+        _log('❌ ERROR', 'Erro ao buscar fotos', { status: r.status, erro: d.error })
+        throw new Error(d.error||'Erro ao buscar fotos')
+      }
       const d = await r.json()
+      _log('✅ OK', `Fotos carregadas`, { total: d.photos?.length, temMaisPages: !!d.nextPageToken })
       setPhotos(prev => page ? [...prev, ...d.photos] : d.photos)
       setNextPage(d.nextPageToken||null)
     } catch(e) { showStatus(`❌ ${e.message} — Verifique se a 'Photos Library API' está ativada no Google Cloud.`, 'error', 10000) }
@@ -521,6 +559,7 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
 
   // Analyze batch
   const analyze = async () => {
+    if (!photos.length) { showStatus('Nenhuma foto encontrada. Aguarde o carregamento.','warn'); return }
     const unanalyzed = photos.filter(p=>!analyzed[p.id]).slice(0,BATCH)
     if (!unanalyzed.length) { showStatus('Todas as fotos já foram analisadas!','ok'); return }
     setAnalyzing(true); setProgress({c:0,t:unanalyzed.length})
@@ -528,14 +567,16 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
     for (let i=0; i<unanalyzed.length; i++) {
       const p = unanalyzed[i]
       try {
+        _log('🤖 GEMINI', `Analisando foto ${i+1}/${unanalyzed.length}`, { id: p.id, nome: p.filename })
         const r = await fetch('/api/analyze', {
           method:'POST', credentials:'include',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ photoId:p.id, thumbnailUrl: p.baseUrl?`${p.baseUrl}=w512-h512-c`:null })
         })
         const d = await r.json()
+      _log('✅ OK', `Fotos carregadas`, { total: d.photos?.length, temMaisPages: !!d.nextPageToken })
         if (r.ok) newAn[p.id] = d; else newAn[p.id] = {error:true}
-      } catch { newAn[p.id] = {error:true} }
+      } catch(err) { _log('❌ ERROR', `Falha ao analisar foto`, { id: p.id, erro: err.message }); newAn[p.id] = {error:true} }
       setAnalyzed({...newAn}); setProgress({c:i+1,t:unanalyzed.length})
     }
     setAnalyzing(false)
@@ -549,12 +590,14 @@ function Dashboard({ userInfo, googleToken, onLogout }) {
     showStatus('Movendo para a lixeira...', 'warn', 0)
     try {
       const ids = Array.from(selected)
+      _log('📸 PHOTOS', `Excluindo ${toDelete.length} foto(s)`, { ids: toDelete })
       const r = await fetch('/api/photos/delete', {
         method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({photoIds:ids})
       })
       const d = await r.json()
+      _log('✅ OK', `Fotos carregadas`, { total: d.photos?.length, temMaisPages: !!d.nextPageToken })
       if (!r.ok) throw new Error(d.error||'Erro ao deletar')
       const newPhotos = photos.filter(p=>!selected.has(p.id))
       const newAn = {...analyzed}; ids.forEach(id=>delete newAn[id])
@@ -710,12 +753,14 @@ function ChatView({ photos, analyzed, onSelect }) {
     const t = (text||input).trim(); if (!t||loading) return
     setInput(''); setMsgs(m=>[...m,{role:'user',text:t}]); setLoading(true)
     try {
+      _log('🤖 GEMINI', 'Enviando mensagem para /api/chat')
       const r = await fetch('/api/chat', {
         method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ message:t, photos:photos.map(p=>({id:p.id,filename:p.filename})), analyzed })
       })
       const d = await r.json()
+      _log('✅ OK', `Fotos carregadas`, { total: d.photos?.length, temMaisPages: !!d.nextPageToken })
       if (!r.ok) throw new Error(d.error)
       setMsgs(m=>[...m,{role:'bot',text:d.response,ids:d.filteredIds}])
       if (d.filteredIds?.length) onSelect(d.filteredIds)
@@ -775,6 +820,7 @@ function App() {
   useEffect(()=>{
     try {
       const s = loadState()
+      _log('⚡ STEP', 'App iniciado, verificando estado salvo', { temEstado: !!s, geminiReady: !!s?.geminiReady })
       if (s?.geminiReady) {
         setUserInfo(s.userInfo||null); setStep('landing')
       }
