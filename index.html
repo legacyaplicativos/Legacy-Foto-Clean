@@ -235,6 +235,15 @@ function LandingPage({ onSuccess }) {
         callback: async (resp) => {
           if (resp.error) { setError('Autorização negada. Tente novamente.'); setLoading(false); return }
           try {
+            // Verify what scopes were actually granted
+            const tokenInfo = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${resp.access_token}`)
+            const info = await tokenInfo.json()
+            const grantedScopes = info.scope || ''
+            if (!grantedScopes.includes('photoslibrary')) {
+              setError('O Google não concedeu acesso às fotos. Verifique se a Photos Library API está ativada e tente novamente.')
+              setLoading(false)
+              return
+            }
             const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${resp.access_token}` } })
             onSuccess(resp.access_token, await r.json())
           } catch { setError('Erro ao buscar perfil do Google.'); setLoading(false) }
