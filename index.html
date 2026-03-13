@@ -231,7 +231,7 @@ function LandingPage({ onSuccess }) {
       if (!window.google?.accounts?.oauth2) return false
       if (!CLIENT_ID || CLIENT_ID.includes('SEU_CLIENT_ID')) return false
       clientRef.current = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID, scope: SCOPES,
+        client_id: CLIENT_ID, scope: SCOPES, prompt: 'consent', include_granted_scopes: false,
         callback: async (resp) => {
           if (resp.error) { setError('Autorização negada. Tente novamente.'); setLoading(false); return }
           try {
