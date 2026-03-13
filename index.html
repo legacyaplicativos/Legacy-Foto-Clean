@@ -13,7 +13,7 @@
     window.PHOTOCLEAN_CONFIG = {
       // Cole aqui seu Google OAuth Client ID
       // Obtenha em: https://console.cloud.google.com/apis/credentials
-      GOOGLE_CLIENT_ID: "39049634148-dsvkvrk4vhnd4uqq4lrhl3pr4bdonvds.apps.googleusercontent.com"
+      GOOGLE_CLIENT_ID: "SEU_CLIENT_ID_AQUI.apps.googleusercontent.com"
     }
   </script>
   <!-- ════════════════════════════════════ -->
@@ -414,7 +414,7 @@ function GeminiSetup({ userInfo, googleToken, onReady, onLogout }) {
               )}
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {[['Quota gratuita','~1.500 req/dia'],['Modelo','gemini-1.5-flash'],['Custo','gratuito']].map(([k,v]) => (
+                {[['Quota gratuita','~1.500 req/dia'],['Modelo','gemini-2.0-flash'],['Custo','gratuito']].map(([k,v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                     <span style={{ color: 'var(--text3)' }}>{k}</span>
                     <span style={{ color: 'var(--amber)' }}>{v}</span>
